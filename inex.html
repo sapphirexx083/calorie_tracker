@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CalorieTrack - AI Калькулятор Калорій</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- ONBOARDING SCREEN -->
+    <div class="onboarding" id="onboarding">
+        <!-- Step 1: Welcome -->
+        <div class="onboarding-step active" id="step-welcome">
+            <div class="onboarding-content">
+                <div class="welcome-animation">
+                    <div class="floating-emoji">🍎</div>
+                    <div class="floating-emoji delay-1">🥗</div>
+                    <div class="floating-emoji delay-2">💪</div>
+                </div>
+                <h1 class="onboarding-title">Привіт! 👋</h1>
+                <p class="onboarding-subtitle">Давай налаштуємо твій ідеальний план харчування</p>
+                <button class="onboarding-btn" onclick="nextStep('step-age')">Почати</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Age & Height -->
+        <div class="onboarding-step" id="step-age">
+            <div class="onboarding-content">
+                <div class="step-indicator">
+                    <div class="step-dot active"></div>
+                    <div class="step-dot"></div>
+                    <div class="step-dot"></div>
+                </div>
+                <h2 class="onboarding-title">Розкажи про себе</h2>
+                <p class="onboarding-subtitle">Це допоможе розрахувати норму калорій</p>
+                
+                <div class="input-group">
+                    <label class="input-label">
+                        <span class="label-icon">🎂</span>
+                        <span>Твій вік</span>
+                    </label>
+                    <input type="number" id="userAge" placeholder="25" min="10" max="100" class="fancy-input">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">
+                        <span class="label-icon">📏</span>
+                        <span>Твій зріст (см)</span>
+                    </label>
+                    <input type="number" id="userHeight" placeholder="170" min="120" max="250" class="fancy-input">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">
+                        <span class="label-icon">⚖️</span>
+                        <span>Твоя вага (кг)</span>
+                    </label>
+                    <input type="number" id="userWeight" placeholder="70" min="30" max="300" class="fancy-input">
+                </div>
+
+                <button class="onboarding-btn" onclick="nextStep('step-goal')">Далі</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Goal -->
+        <div class="onboarding-step" id="step-goal">
+            <div class="onboarding-content">
+                <div class="step-indicator">
+                    <div class="step-dot filled"></div>
+                    <div class="step-dot active"></div>
+                    <div class="step-dot"></div>
+                </div>
+                <h2 class="onboarding-title">Яка твоя ціль?</h2>
+                <p class="onboarding-subtitle">Оберіть один з варіантів</p>
+                
+                <div class="goal-cards">
+                    <div class="goal-card" onclick="selectGoal('loss')">
+                        <div class="goal-icon">🔥</div>
+                        <h3 class="goal-title">Схуднення</h3>
+                        <p class="goal-desc">Втрата ваги та спалювання жиру</p>
+                        <div class="goal-badge">-500 ккал</div>
+                    </div>
+
+                    <div class="goal-card" onclick="selectGoal('maintain')">
+                        <div class="goal-icon">⚖️</div>
+                        <h3 class="goal-title">Підтримка</h3>
+                        <p class="goal-desc">Збереження поточної ваги</p>
+                        <div class="goal-badge">Норма</div>
+                    </div>
+
+                    <div class="goal-card" onclick="selectGoal('gain')">
+                        <div class="goal-icon">💪</div>
+                        <h3 class="goal-title">Набір маси</h3>
+                        <p class="goal-desc">Збільшення м'язової маси</p>
+                        <div class="goal-badge">+500 ккал</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Activity -->
+        <div class="onboarding-step" id="step-activity">
+            <div class="onboarding-content">
+                <div class="step-indicator">
+                    <div class="step-dot filled"></div>
+                    <div class="step-dot filled"></div>
+                    <div class="step-dot active"></div>
+                </div>
+                <h2 class="onboarding-title">Рівень активності</h2>
+                <p class="onboarding-subtitle">Скільки ти рухаєшся?</p>
+                
+                <div class="activity-list">
+                    <div class="activity-card" onclick="selectActivity(1.2)">
+                        <div class="activity-icon">🛋️</div>
+                        <div class="activity-info">
+                            <h4>Мінімальна</h4>
+                            <p>Сидяча робота, без тренувань</p>
+                        </div>
+                    </div>
+
+                    <div class="activity-card" onclick="selectActivity(1.375)">
+                        <div class="activity-icon">🚶</div>
+                        <div class="activity-info">
+                            <h4>Легка</h4>
+                            <p>Тренування 1-3 рази на тиждень</p>
+                        </div>
+                    </div>
+
+                    <div class="activity-card" onclick="selectActivity(1.55)">
+                        <div class="activity-icon">🏃</div>
+                        <div class="activity-info">
+                            <h4>Середня</h4>
+                            <p>Тренування 3-5 разів на тиждень</p>
+                        </div>
+                    </div>
+
+                    <div class="activity-card" onclick="selectActivity(1.725)">
+                        <div class="activity-icon">🏋️</div>
+                        <div class="activity-info">
+                            <h4>Висока</h4>
+                            <p>Тренування 6-7 разів на тиждень</p>
+                        </div>
+                    </div>
+
+                    <div class="activity-card" onclick="selectActivity(1.9)">
+                        <div class="activity-icon">⚡</div>
+                        <div class="activity-info">
+                            <h4>Дуже висока</h4>
+                            <p>Важка фізична робота + тренування</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="navbar" id="navbar" style="display: none;">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-icon">🍎</span>
+                <span class="logo-text">CalorieTrack</span>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-btn active" data-page="tracker">Трекер</button>
+                <button class="nav-btn" data-page="history">Історія</button>
+                <button class="nav-btn" data-page="stats">Статистика</button>
+                <button class="nav-btn" data-page="goals">Цілі</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <!-- TRACKER PAGE -->
+        <div class="page active" id="tracker-page">
+            <div class="content-wrapper">
+                <div class="left-panel">
+                    <!-- AI MENU GENERATOR -->
+                    <div class="ai-menu-section">
+                        <div class="ai-menu-header">
+                            <h3 class="ai-menu-title">🤖 AI Меню на день</h3>
+                            <button class="ai-generate-btn" id="generateMenuBtn">
+                                <span class="btn-icon">✨</span>
+                                <span>Згенерувати</span>
+                            </button>
+                        </div>
+                        <div class="ai-menu-content" id="aiMenuContent">
+                            <div class="ai-menu-placeholder">
+                                <div class="placeholder-icon">🍽️</div>
+                                <p>Натисни "Згенерувати" і AI складе персональне меню на день!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="daily-summary">
+                        <h2 class="section-title">Сьогодні</h2>
+                        <div class="date-display" id="currentDate"></div>
+                        
+                        <div class="calories-ring">
+                            <svg viewBox="0 0 200 200" class="ring-svg">
+                                <circle cx="100" cy="100" r="80" class="ring-bg"></circle>
+                                <circle cx="100" cy="100" r="80" class="ring-progress" id="calorieRing"></circle>
+                            </svg>
+                            <div class="ring-content">
+                                <div class="calories-consumed" id="caloriesConsumed">0</div>
+                                <div class="calories-goal">з <span id="caloriesGoal">2000</span></div>
+                                <div class="calories-label">калорій</div>
+                            </div>
+                        </div>
+
+                        <div class="macros-grid">
+                            <div class="macro-card">
+                                <div class="macro-icon">🍗</div>
+                                <div class="macro-info">
+                                    <div class="macro-label">Білки</div>
+                                    <div class="macro-value">
+                                        <span id="proteinValue">0</span>г / <span id="proteinGoal">150</span>г
+                                    </div>
+                                </div>
+                                <div class="macro-bar">
+                                    <div class="macro-bar-fill" id="proteinBar"></div>
+                                </div>
+                            </div>
+
+                            <div class="macro-card">
+                                <div class="macro-icon">🍚</div>
+                                <div class="macro-info">
+                                    <div class="macro-label">Вуглеводи</div>
+                                    <div class="macro-value">
+                                        <span id="carbsValue">0</span>г / <span id="carbsGoal">250</span>г
+                                    </div>
+                                </div>
+                                <div class="macro-bar">
+                                    <div class="macro-bar-fill" id="carbsBar"></div>
+                                </div>
+                            </div>
+
+                            <div class="macro-card">
+                                <div class="macro-icon">🥑</div>
+                                <div class="macro-info">
+                                    <div class="macro-label">Жири</div>
+                                    <div class="macro-value">
+                                        <span id="fatsValue">0</span>г / <span id="fatsGoal">65</span>г
+                                    </div>
+                                </div>
+                                <div class="macro-bar">
+                                    <div class="macro-bar-fill" id="fatsBar"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <button class="action-btn primary" id="photoBtn">
+                            <span class="btn-icon">📸</span>
+                            <span class="btn-text">Сфотографувати страву</span>
+                        </button>
+                        <button class="action-btn secondary" id="manualBtn">
+                            <span class="btn-icon">✏️</span>
+                            <span class="btn-text">Додати вручну</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <div class="meals-section">
+                        <h2 class="section-title">Прийоми їжі</h2>
+                        
+                        <div class="meal-group">
+                            <div class="meal-header">
+                                <span class="meal-icon">🌅</span>
+                                <span class="meal-name">Сніданок</span>
+                                <span class="meal-calories" id="breakfastCalories">0 ккал</span>
+                            </div>
+                            <div class="meal-items" id="breakfastItems">
+                                <div class="empty-meal">Додайте страву</div>
+                            </div>
+                        </div>
+
+                        <div class="meal-group">
+                            <div class="meal-header">
+                                <span class="meal-icon">☀️</span>
+                                <span class="meal-name">Обід</span>
+                                <span class="meal-calories" id="lunchCalories">0 ккал</span>
+                            </div>
+                            <div class="meal-items" id="lunchItems">
+                                <div class="empty-meal">Додайте страву</div>
+                            </div>
+                        </div>
+
+                        <div class="meal-group">
+                            <div class="meal-header">
+                                <span class="meal-icon">🌙</span>
+                                <span class="meal-name">Вечеря</span>
+                                <span class="meal-calories" id="dinnerCalories">0 ккал</span>
+                            </div>
+                            <div class="meal-items" id="dinnerItems">
+                                <div class="empty-meal">Додайте страву</div>
+                            </div>
+                        </div>
+
+                        <div class="meal-group">
+                            <div class="meal-header">
+                                <span class="meal-icon">🍪</span>
+                                <span class="meal-name">Перекуси</span>
+                                <span class="meal-calories" id="snacksCalories">0 ккал</span>
+                            </div>
+                            <div class="meal-items" id="snacksItems">
+                                <div class="empty-meal">Додайте страву</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HISTORY PAGE -->
+        <div class="page" id="history-page">
+            <div class="content-wrapper-full">
+                <div class="history-header">
+                    <h2 class="section-title">📅 Історія харчування</h2>
+                    <div class="history-filters">
+                        <button class="filter-btn active" data-period="week">
+                            <span class="filter-icon">📅</span>
+                            <span>Тиждень</span>
+                        </button>
+                        <button class="filter-btn" data-period="month">
+                            <span class="filter-icon">📆</span>
+                            <span>Місяць</span>
+                        </button>
+                        <button class="filter-btn" data-period="all">
+                            <span class="filter-icon">🗓️</span>
+                            <span>Все</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="history-timeline" id="historyTimeline">
+                    <div class="empty-state">
+                        <div class="empty-icon">📊</div>
+                        <h3>Історія порожня</h3>
+                        <p>Почніть додавати страви, щоб побачити історію</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATS PAGE -->
+        <div class="page" id="stats-page">
+            <div class="content-wrapper">
+                <h2 class="section-title">Статистика</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🔥</div>
+                        <div class="stat-label">Середньо за день</div>
+                        <div class="stat-value" id="avgCalories">0</div>
+                        <div class="stat-unit">калорій</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-label">Днів відстежено</div>
+                        <div class="stat-value" id="trackedDays">0</div>
+                        <div class="stat-unit">днів</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-label">Цілі досягнуто</div>
+                        <div class="stat-value" id="goalsReached">0</div>
+                        <div class="stat-unit">разів</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-label">Загальна кількість</div>
+                        <div class="stat-value" id="totalCalories">0</div>
+                        <div class="stat-unit">калорій</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3 class="chart-title">Динаміка калорій за тиждень</h3>
+                    <canvas id="weekChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- GOALS PAGE -->
+        <div class="page" id="goals-page">
+            <div class="content-wrapper">
+                <h2 class="section-title">Налаштування цілей</h2>
+                <div class="goals-form">
+                    <div class="form-group">
+                        <label>Денна норма калорій</label>
+                        <input type="number" id="goalCaloriesInput" value="2000">
+                        <span class="input-unit">ккал</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Білки</label>
+                        <input type="number" id="goalProteinInput" value="150">
+                        <span class="input-unit">г</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Вуглеводи</label>
+                        <input type="number" id="goalCarbsInput" value="250">
+                        <span class="input-unit">г</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Жири</label>
+                        <input type="number" id="goalFatsInput" value="65">
+                        <span class="input-unit">г</span>
+                    </div>
+
+                    <button class="save-btn" id="saveGoalsBtn">Зберегти цілі</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- PHOTO MODAL -->
+    <div class="modal" id="photoModal">
+        <div class="modal-content photo-modal">
+            <div class="modal-header">
+                <h3>Проаналізувати страву</h3>
+                <button class="close-btn" id="closePhotoModal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                    <div class="upload-placeholder">
+                        <div class="upload-icon">📷</div>
+                        <div class="upload-text">Завантажте фото страви</div>
+                        <div class="upload-hint">або перетягніть сюди</div>
+                    </div>
+                    <div class="preview-container hidden" id="previewContainer">
+                        <img id="imagePreview" alt="Preview">
+                    </div>
+                </div>
+                
+                <div class="optional-inputs" id="optionalInputs" style="display: none;">
+                    <div class="input-hint">💡 Опціонально: допоможи AI точніше визначити страву</div>
+                    <div class="form-group">
+                        <label>Назва страви (якщо знаєш)</label>
+                        <input type="text" id="optionalFoodName" placeholder="Наприклад: Борщ з сметаною">
+                    </div>
+                    <div class="form-group">
+                        <label>Вага порції в грамах (якщо знаєш)</label>
+                        <input type="number" id="optionalWeight" placeholder="Наприклад: 350">
+                    </div>
+                </div>
+                
+                <button class="analyze-btn" id="analyzeBtn">Проаналізувати</button>
+                <div class="analysis-result hidden" id="analysisResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MANUAL MODAL -->
+    <div class="modal" id="manualModal">
+        <div class="modal-content manual-modal">
+            <div class="modal-header">
+                <h3>Додати страву вручну</h3>
+                <button class="close-btn" id="closeManualModal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Назва страви</label>
+                    <input type="text" id="foodName" placeholder="Наприклад: Курка з рисом">
+                </div>
+                <div class="form-group">
+                    <label>Калорії</label>
+                    <input type="number" id="foodCalories" placeholder="500">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Білки (г)</label>
+                        <input type="number" id="foodProtein" placeholder="30">
+                    </div>
+                    <div class="form-group">
+                        <label>Вуглеводи (г)</label>
+                        <input type="number" id="foodCarbs" placeholder="50">
+                    </div>
+                    <div class="form-group">
+                        <label>Жири (г)</label>
+                        <input type="number" id="foodFats" placeholder="15">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Прийом їжі</label>
+                    <select id="mealType">
+                        <option value="breakfast">Сніданок</option>
+                        <option value="lunch">Обід</option>
+                        <option value="dinner">Вечеря</option>
+                        <option value="snacks">Перекус</option>
+                    </select>
+                </div>
+                <button class="save-btn" id="addFoodBtn">Додати страву</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
+
+    <script src="script.js"></script>
+</body>
+</html>
