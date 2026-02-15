@@ -1,6 +1,9 @@
 const GROQ_API_KEY = "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";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
+// БЛОКУВАННЯ ДО ЗАВЕРШЕННЯ ОНБОРДИНГУ
+let isOnboardingComplete = false;
+
 let userData = {
     age: null,
     height: null,
@@ -117,9 +120,10 @@ function calculateCalories() {
 }
 
 function finishOnboarding() {
+    isOnboardingComplete = true;
     document.getElementById('onboarding').style.display = 'none';
-    document.getElementById('navbar').style.display = 'block';
-    document.querySelector('.main-content').style.display = 'block';
+    document.getElementById('navbar').style.display = 'flex';
+    document.getElementById('mainContent').style.display = 'block';
     document.body.style.background = 'var(--bg-secondary)';
     
     loadData();
@@ -131,13 +135,24 @@ function checkOnboarding() {
     
     if (saved) {
         userData = JSON.parse(saved);
+        isOnboardingComplete = true;
         document.getElementById('onboarding').style.display = 'none';
-        document.getElementById('navbar').style.display = 'block';
+        document.getElementById('navbar').style.display = 'flex';
+        document.getElementById('mainContent').style.display = 'block';
         document.body.style.background = 'var(--bg-secondary)';
         return true;
     }
     
+    isOnboardingComplete = false;
     return false;
+}
+
+function checkAccess() {
+    if (!isOnboardingComplete) {
+        alert('❌ Спочатку завершіть налаштування профілю!');
+        return false;
+    }
+    return true;
 }
 
 function loadData() {
@@ -151,13 +166,14 @@ function loadData() {
             currentData = data;
         } else {
             if (data.calories > 0) {
+                if (!currentData.history) currentData.history = [];
                 currentData.history.push({
                     date: data.lastUpdate,
                     calories: data.calories,
                     protein: data.protein,
                     carbs: data.carbs,
                     fats: data.fats,
-                    meals: data.meals
+                    meals: JSON.parse(JSON.stringify(data.meals))
                 });
             }
             currentData.goals = data.goals;
@@ -425,6 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.getElementById('photoBtn').addEventListener('click', () => {
+        if (!checkAccess()) return;
         document.getElementById('photoModal').classList.add('active');
     });
     
@@ -434,6 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.getElementById('manualBtn').addEventListener('click', () => {
+        if (!checkAccess()) return;
         document.getElementById('manualModal').classList.add('active');
     });
     
@@ -585,7 +603,10 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('✅ Цілі збережено!');
     });
     
-    document.getElementById('generateMenuBtn').addEventListener('click', generateAIMenu);
+    document.getElementById('generateMenuBtn').addEventListener('click', () => {
+        if (!checkAccess()) return;
+        generateAIMenu();
+    });
 });
 
 async function generateAIMenu() {
@@ -813,7 +834,7 @@ function loadGoalsForm() {
 }
 
 function updateStats() {
-    const history = currentData.history;
+    const history = currentData.history || [];
     const totalCalories = history.reduce((sum, day) => sum + day.calories, 0);
     const avgCalories = history.length > 0 ? totalCalories / history.length : 0;
     const goalsReached = history.filter(day => 
@@ -824,41 +845,134 @@ function updateStats() {
     document.getElementById('trackedDays').textContent = history.length;
     document.getElementById('goalsReached').textContent = goalsReached;
     document.getElementById('totalCalories').textContent = Math.round(totalCalories);
+    
+    displayDetailedChart();
+}
+
+function displayDetailedChart() {
+    const chartContainer = document.getElementById('weekChart');
+    const history = (currentData.history || []).slice(-7);
+    
+    if (history.length === 0) {
+        chartContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">Немає даних для відображення</p>';
+        return;
+    }
+    
+    let html = '<div class="detailed-chart">';
+    
+    history.forEach(day => {
+        const date = new Date(day.date);
+        const dateStr = date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
+        
+        const meals = day.meals || {breakfast:[], lunch:[], dinner:[], snacks:[]};
+        const breakfastCal = meals.breakfast ? meals.breakfast.reduce((sum, m) => sum + m.calories, 0) : 0;
+        const lunchCal = meals.lunch ? meals.lunch.reduce((sum, m) => sum + m.calories, 0) : 0;
+        const dinnerCal = meals.dinner ? meals.dinner.reduce((sum, m) => sum + m.calories, 0) : 0;
+        const snacksCal = meals.snacks ? meals.snacks.reduce((sum, m) => sum + m.calories, 0) : 0;
+        
+        html += `
+            <div class="chart-day">
+                <div class="chart-day-header">
+                    <strong>${dateStr}</strong>
+                    <span>${Math.round(day.calories)} ккал</span>
+                </div>
+                <div class="chart-day-meals">
+                    ${breakfastCal > 0 ? `<div class="chart-meal">🌅 ${breakfastCal.toFixed(0)} ккал</div>` : ''}
+                    ${lunchCal > 0 ? `<div class="chart-meal">☀️ ${lunchCal.toFixed(0)} ккал</div>` : ''}
+                    ${dinnerCal > 0 ? `<div class="chart-meal">🌙 ${dinnerCal.toFixed(0)} ккал</div>` : ''}
+                    ${snacksCal > 0 ? `<div class="chart-meal">🍪 ${snacksCal.toFixed(0)} ккал</div>` : ''}
+                </div>
+                <div class="chart-bar-container">
+                    <div class="chart-bar" style="width: ${Math.min((day.calories / currentData.goals.calories) * 100, 100)}%; background: ${day.calories > currentData.goals.calories ? '#ef4444' : '#10b981'}"></div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    chartContainer.innerHTML = html;
 }
 
 function loadHistory() {
     const timeline = document.getElementById('historyTimeline');
-    const history = [...currentData.history].reverse();
+    const history = [...(currentData.history || [])].reverse();
     
     if (history.length === 0) {
-        timeline.innerHTML = '<div style="text-align: center; padding: 48px; color: var(--text-secondary);">Історія порожня</div>';
+        timeline.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">📊</div>
+                <h3>Історія порожня</h3>
+                <p>Почніть додавати страви, щоб побачити історію</p>
+            </div>
+        `;
         return;
     }
     
-    timeline.innerHTML = history.map(day => `
-        <div class="history-item">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <div style="font-weight: 700; font-size: 18px;">
-                    ${new Date(day.date).toLocaleDateString('uk-UA', { weekday: 'long', month: 'long', day: 'numeric' })}
+    timeline.innerHTML = history.map(day => {
+        const meals = day.meals || {breakfast:[], lunch:[], dinner:[], snacks:[]};
+        const mealBreakdown = `
+            <div class="history-meals">
+                ${meals.breakfast && meals.breakfast.length > 0 ? `
+                    <div class="history-meal-section">
+                        <h4>🌅 Сніданок</h4>
+                        ${meals.breakfast.map(m => `
+                            <div class="history-meal-item">${m.emoji || '🍽️'} ${m.name} - ${Math.round(m.calories)} ккал</div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+                ${meals.lunch && meals.lunch.length > 0 ? `
+                    <div class="history-meal-section">
+                        <h4>☀️ Обід</h4>
+                        ${meals.lunch.map(m => `
+                            <div class="history-meal-item">${m.emoji || '🍽️'} ${m.name} - ${Math.round(m.calories)} ккал</div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+                ${meals.dinner && meals.dinner.length > 0 ? `
+                    <div class="history-meal-section">
+                        <h4>🌙 Вечеря</h4>
+                        ${meals.dinner.map(m => `
+                            <div class="history-meal-item">${m.emoji || '🍽️'} ${m.name} - ${Math.round(m.calories)} ккал</div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+                ${meals.snacks && meals.snacks.length > 0 ? `
+                    <div class="history-meal-section">
+                        <h4>🍪 Перекуси</h4>
+                        ${meals.snacks.map(m => `
+                            <div class="history-meal-item">${m.emoji || '🍽️'} ${m.name} - ${Math.round(m.calories)} ккал</div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        
+        return `
+            <div class="history-item">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div style="font-weight: 700; font-size: 18px;">
+                        ${new Date(day.date).toLocaleDateString('uk-UA', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </div>
+                    <div style="font-size: 24px; font-weight: 700; color: var(--primary);">
+                        ${Math.round(day.calories)} ккал
+                    </div>
                 </div>
-                <div style="font-size: 24px; font-weight: 700; color: var(--primary);">
-                    ${Math.round(day.calories)} ккал
+                ${mealBreakdown}
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px;">
+                    <div style="text-align: center; padding: 12px; background: var(--bg-secondary); border-radius: 8px;">
+                        <div style="font-size: 12px; color: var(--text-secondary);">Білки</div>
+                        <div style="font-size: 18px; font-weight: 600;">${Math.round(day.protein)}г</div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background: var(--bg-secondary); border-radius: 8px;">
+                        <div style="font-size: 12px; color: var(--text-secondary);">Вуглеводи</div>
+                        <div style="font-size: 18px; font-weight: 600;">${Math.round(day.carbs)}г</div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background: var(--bg-secondary); border-radius: 8px;">
+                        <div style="font-size: 12px; color: var(--text-secondary);">Жири</div>
+                        <div style="font-size: 18px; font-weight: 600;">${Math.round(day.fats)}г</div>
+                    </div>
                 </div>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
-                <div style="text-align: center; padding: 12px; background: var(--bg-secondary); border-radius: 8px;">
-                    <div style="font-size: 12px; color: var(--text-secondary);">Білки</div>
-                    <div style="font-size: 18px; font-weight: 600;">${Math.round(day.protein)}г</div>
-                </div>
-                <div style="text-align: center; padding: 12px; background: var(--bg-secondary); border-radius: 8px;">
-                    <div style="font-size: 12px; color: var(--text-secondary);">Вуглеводи</div>
-                    <div style="font-size: 18px; font-weight: 600;">${Math.round(day.carbs)}г</div>
-                </div>
-                <div style="text-align: center; padding: 12px; background: var(--bg-secondary); border-radius: 8px;">
-                    <div style="font-size: 12px; color: var(--text-secondary);">Жири</div>
-                    <div style="font-size: 18px; font-weight: 600;">${Math.round(day.fats)}г</div>
-                </div>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
