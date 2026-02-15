@@ -2,8 +2,11 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>CalorieTrack - AI Калькулятор Калорій</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -154,22 +157,33 @@
         </div>
     </div>
 
+    <!-- NAVBAR - ВИПРАВЛЕНО ДЛЯ МОБІЛЬНОГО -->
     <nav class="navbar" id="navbar" style="display: none;">
-        <div class="nav-container">
-            <div class="logo">
-                <span class="logo-icon">🍎</span>
-                <span class="logo-text">CalorieTrack</span>
-            </div>
-            <div class="nav-menu">
-                <button class="nav-btn active" data-page="tracker">Трекер</button>
-                <button class="nav-btn" data-page="history">Історія</button>
-                <button class="nav-btn" data-page="stats">Статистика</button>
-                <button class="nav-btn" data-page="goals">Цілі</button>
-            </div>
+        <div class="logo">
+            <span class="logo-icon">🍎</span>
+            <span class="logo-text">CalorieTrack</span>
+        </div>
+        <div class="nav-menu">
+            <button class="nav-btn active" data-page="tracker">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Трекер</span>
+            </button>
+            <button class="nav-btn" data-page="history">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label">Історія</span>
+            </button>
+            <button class="nav-btn" data-page="stats">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Статистика</span>
+            </button>
+            <button class="nav-btn" data-page="goals">
+                <span class="nav-icon">🎯</span>
+                <span class="nav-label">Цілі</span>
+            </button>
         </div>
     </nav>
 
-    <main class="main-content">
+    <main class="main-content" id="mainContent" style="display: none;">
         <!-- TRACKER PAGE -->
         <div class="page active" id="tracker-page">
             <div class="content-wrapper">
@@ -345,8 +359,8 @@
 
         <!-- STATS PAGE -->
         <div class="page" id="stats-page">
-            <div class="content-wrapper">
-                <h2 class="section-title">Статистика</h2>
+            <div class="content-wrapper-full">
+                <h2 class="section-title">📊 Статистика</h2>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon">🔥</div>
@@ -378,16 +392,16 @@
                 </div>
 
                 <div class="chart-container">
-                    <h3 class="chart-title">Динаміка калорій за тиждень</h3>
-                    <canvas id="weekChart"></canvas>
+                    <h3 class="chart-title">📈 Динаміка останніх 7 днів</h3>
+                    <div id="weekChart"></div>
                 </div>
             </div>
         </div>
 
         <!-- GOALS PAGE -->
         <div class="page" id="goals-page">
-            <div class="content-wrapper">
-                <h2 class="section-title">Налаштування цілей</h2>
+            <div class="content-wrapper-full">
+                <h2 class="section-title">🎯 Налаштування цілей</h2>
                 <div class="goals-form">
                     <div class="form-group">
                         <label>Денна норма калорій</label>
