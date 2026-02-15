@@ -1,7 +1,6 @@
 const GROQ_API_KEY = "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";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-// БЛОКУВАННЯ ДО ЗАВЕРШЕННЯ ОНБОРДИНГУ
 let isOnboardingComplete = false;
 
 let userData = {
@@ -374,7 +373,7 @@ async function analyzePhoto(imageBase64) {
         if (!response.ok) {
             const errorData = await response.json();
             console.error('API Error:', errorData);
-            throw new Error(`API помилка: ${response.status} - ${errorData.error?.message || 'Невідома помилка'}`);
+            throw new Error(`API помилка: ${response.status}`);
         }
 
         const data = await response.json();
@@ -440,6 +439,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
+    // ФІЛЬТРИ ІСТОРІЇ
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const period = btn.dataset.period;
+            filterHistory(period);
+        });
+    });
+    
     document.getElementById('photoBtn').addEventListener('click', () => {
         if (!checkAccess()) return;
         document.getElementById('photoModal').classList.add('active');
@@ -493,6 +503,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.getElementById('analyzeBtn').addEventListener('click', async () => {
+        const preview = document.getElementById('imagePreview');
+        
+        // ПЕРЕВІРКА ЧИ ФОТО ПРИКРІПЛЕНО
+        if (!preview.src || preview.src === window.location.href) {
+            alert('❌ Будь ласка, завантажте фото страви!');
+            return;
+        }
+        
         const btn = document.getElementById('analyzeBtn');
         const result = document.getElementById('analysisResult');
         
@@ -501,11 +519,12 @@ document.addEventListener('DOMContentLoaded', () => {
         result.classList.add('hidden');
         
         try {
-            const imageBase64 = document.getElementById('imagePreview').src.split(',')[1];
-            const optionalName = document.getElementById('optionalFoodName').value.trim();
-            const optionalWeight = document.getElementById('optionalWeight').value.trim();
+            const imageBase64 = preview.src.split(',')[1];
+            if (!imageBase64) {
+                throw new Error('Невалідне зображення');
+            }
             
-            const foodData = await analyzePhoto(imageBase64, optionalName, optionalWeight);
+            const foodData = await analyzePhoto(imageBase64);
             
             result.innerHTML = `
                 <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">
@@ -556,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
         } catch (error) {
             result.innerHTML = `
-                <div style="color: var(--danger); text-align: center;">
+                <div style="color: var(--danger); text-align: center; padding: 20px;">
                     ❌ Помилка аналізу: ${error.message}
                 </div>
             `;
@@ -576,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const mealType = document.getElementById('mealType').value;
         
         if (!name || calories === 0) {
-            alert('Заповніть назву та калорії!');
+            alert('❌ Заповніть назву та калорії!');
             return;
         }
         
@@ -782,7 +801,7 @@ function addAIMeal(mealType, mealData) {
 
 function handleFile(file) {
     if (!file.type.startsWith('image/')) {
-        alert('Будь ласка, завантажте зображення');
+        alert('❌ Будь ласка, завантажте зображення!');
         return;
     }
     
@@ -802,8 +821,11 @@ function handleFile(file) {
 function resetPhotoModal() {
     document.getElementById('fileInput').value = '';
     document.getElementById('imagePreview').src = '';
+    document.getElementById('optionalFoodName').value = '';
+    document.getElementById('optionalWeight').value = '';
     document.querySelector('.upload-placeholder').style.display = 'block';
     document.getElementById('previewContainer').classList.add('hidden');
+    document.getElementById('optionalInputs').style.display = 'none';
     document.getElementById('analysisResult').classList.add('hidden');
     document.getElementById('analyzeBtn').disabled = true;
 }
@@ -894,8 +916,24 @@ function displayDetailedChart() {
 }
 
 function loadHistory() {
+    filterHistory('week');
+}
+
+function filterHistory(period) {
     const timeline = document.getElementById('historyTimeline');
-    const history = [...(currentData.history || [])].reverse();
+    let history = [...(currentData.history || [])];
+    
+    const now = new Date();
+    
+    if (period === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        history = history.filter(day => new Date(day.date) >= weekAgo);
+    } else if (period === 'month') {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        history = history.filter(day => new Date(day.date) >= monthAgo);
+    }
+    
+    history = history.reverse();
     
     if (history.length === 0) {
         timeline.innerHTML = `
