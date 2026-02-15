@@ -1329,4 +1329,146 @@ body {
     .form-row {
         grid-template-columns: 1fr;
     }
+
+}
+.navbar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+
+.nav-menu {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    width: 100%;
+    max-width: 500px;
+    padding: 0 16px;
+}
+
+.nav-btn {
+    flex: 1;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-height: 60px;
+}
+
+.nav-icon {
+    font-size: 24px;
+}
+
+.nav-label {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+@media (min-width: 769px) {
+    .navbar {
+        flex-direction: row;
+        padding: 16px 0;
+    }
+    .logo {
+        margin-bottom: 0;
+        margin-left: 24px;
+    }
+    .nav-menu {
+        margin-left: auto;
+        margin-right: 24px;
+        width: auto;
+    }
+    .nav-btn {
+        flex: none;
+        flex-direction: row;
+        padding: 10px 20px;
+        min-height: auto;
+    }
+}
+
+/* ДЕТАЛЬНА СТАТИСТИКА */
+.detailed-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.chart-day {
+    background: var(--bg-secondary);
+    padding: 16px;
+    border-radius: 12px;
+    border-left: 4px solid var(--primary);
+}
+
+.chart-day-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+.chart-day-meals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.chart-meal {
+    padding: 6px 12px;
+    background: white;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.chart-bar-container {
+    width: 100%;
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.chart-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.history-meals {
+    display: grid;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.history-meal-section {
+    background: var(--bg-secondary);
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.history-meal-section h4 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.history-meal-item {
+    padding: 8px;
+    background: white;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 13px;
 }
