@@ -1,8 +1,6 @@
 const GROQ_API_KEY = "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";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-let isOnboardingComplete = false;
-
 let userData = {
     age: null,
     height: null,
@@ -33,6 +31,8 @@ let currentData = {
     },
     history: []
 };
+
+let currentHistoryFilter = 'week';
 
 function nextStep(stepId) {
     if (stepId === 'step-goal') {
@@ -119,11 +119,9 @@ function calculateCalories() {
 }
 
 function finishOnboarding() {
-    isOnboardingComplete = true;
     document.getElementById('onboarding').style.display = 'none';
-    document.getElementById('navbar').style.display = 'flex';
-    document.getElementById('mainContent').style.display = 'block';
-    document.body.style.background = 'var(--bg-secondary)';
+    document.getElementById('navbar').style.display = 'block';
+    document.querySelector('.main-content').style.display = 'block';
     
     loadData();
     updateUI();
@@ -134,24 +132,12 @@ function checkOnboarding() {
     
     if (saved) {
         userData = JSON.parse(saved);
-        isOnboardingComplete = true;
         document.getElementById('onboarding').style.display = 'none';
-        document.getElementById('navbar').style.display = 'flex';
-        document.getElementById('mainContent').style.display = 'block';
-        document.body.style.background = 'var(--bg-secondary)';
+        document.getElementById('navbar').style.display = 'block';
         return true;
     }
     
-    isOnboardingComplete = false;
     return false;
-}
-
-function checkAccess() {
-    if (!isOnboardingComplete) {
-        alert('❌ Спочатку завершіть налаштування профілю!');
-        return false;
-    }
-    return true;
 }
 
 function loadData() {
@@ -165,9 +151,11 @@ function loadData() {
             currentData = data;
         } else {
             if (data.calories > 0) {
-                if (!currentData.history) currentData.history = [];
-                currentData.history.push({
-                    date: data.lastUpdate,
+                if (!data.history) {
+                    data.history = [];
+                }
+                data.history.push({
+                    date: data.lastUpdate || new Date().toISOString(),
                     calories: data.calories,
                     protein: data.protein,
                     carbs: data.carbs,
@@ -311,7 +299,8 @@ const foodEmojis = {
     'десерт': '🍰', 'торт': '🍰', 'cake': '🍰',
     'морозиво': '🍦', 'мороженое': '🍦', 'ice cream': '🍦',
     'кава': '☕', 'coffee': '☕',
-    'чай': '🍵', 'tea': '🍵'
+    'чай': '🍵', 'tea': '🍵',
+    'борщ': '🍲', 'вареники': '🥟'
 };
 
 function getFoodEmoji(foodName) {
@@ -373,7 +362,7 @@ async function analyzePhoto(imageBase64) {
         if (!response.ok) {
             const errorData = await response.json();
             console.error('API Error:', errorData);
-            throw new Error(`API помилка: ${response.status}`);
+            throw new Error(`API помилка: ${response.status} - ${errorData.error?.message || 'Невідома помилка'}`);
         }
 
         const data = await response.json();
@@ -403,230 +392,6 @@ async function analyzePhoto(imageBase64) {
         throw error;
     }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    if (checkOnboarding()) {
-        loadData();
-        updateUI();
-    }
-    
-    const svg = document.querySelector('.ring-svg');
-    svg.innerHTML += `
-        <defs>
-            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
-            </linearGradient>
-        </defs>
-    `;
-    
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            const page = btn.dataset.page;
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(`${page}-page`).classList.add('active');
-            
-            if (page === 'stats') {
-                updateStats();
-            } else if (page === 'goals') {
-                loadGoalsForm();
-            } else if (page === 'history') {
-                loadHistory();
-            }
-        });
-    });
-    
-    // ФІЛЬТРИ ІСТОРІЇ
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            const period = btn.dataset.period;
-            filterHistory(period);
-        });
-    });
-    
-    document.getElementById('photoBtn').addEventListener('click', () => {
-        if (!checkAccess()) return;
-        document.getElementById('photoModal').classList.add('active');
-    });
-    
-    document.getElementById('closePhotoModal').addEventListener('click', () => {
-        document.getElementById('photoModal').classList.remove('active');
-        resetPhotoModal();
-    });
-    
-    document.getElementById('manualBtn').addEventListener('click', () => {
-        if (!checkAccess()) return;
-        document.getElementById('manualModal').classList.add('active');
-    });
-    
-    document.getElementById('closeManualModal').addEventListener('click', () => {
-        document.getElementById('manualModal').classList.remove('active');
-        resetManualModal();
-    });
-    
-    const uploadArea = document.getElementById('uploadArea');
-    const fileInput = document.getElementById('fileInput');
-    
-    uploadArea.addEventListener('click', () => {
-        fileInput.click();
-    });
-    
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('dragover');
-    });
-    
-    uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('dragover');
-    });
-    
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-        
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            handleFile(files[0]);
-        }
-    });
-    
-    fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            handleFile(e.target.files[0]);
-        }
-    });
-    
-    document.getElementById('analyzeBtn').addEventListener('click', async () => {
-        const preview = document.getElementById('imagePreview');
-        
-        // ПЕРЕВІРКА ЧИ ФОТО ПРИКРІПЛЕНО
-        if (!preview.src || preview.src === window.location.href) {
-            alert('❌ Будь ласка, завантажте фото страви!');
-            return;
-        }
-        
-        const btn = document.getElementById('analyzeBtn');
-        const result = document.getElementById('analysisResult');
-        
-        btn.disabled = true;
-        btn.textContent = '⏳ Аналізую...';
-        result.classList.add('hidden');
-        
-        try {
-            const imageBase64 = preview.src.split(',')[1];
-            if (!imageBase64) {
-                throw new Error('Невалідне зображення');
-            }
-            
-            const foodData = await analyzePhoto(imageBase64);
-            
-            result.innerHTML = `
-                <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">
-                    ${foodData.emoji} ${foodData.name}
-                </h4>
-                <p style="color: var(--text-secondary); margin-bottom: 16px;">
-                    ${foodData.description || ''}
-                </p>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;">
-                    <div style="padding: 12px; background: white; border-radius: 8px;">
-                        <div style="font-size: 12px; color: var(--text-secondary);">Калорії</div>
-                        <div style="font-size: 24px; font-weight: 700; color: var(--primary);">${Math.round(foodData.calories)}</div>
-                    </div>
-                    <div style="padding: 12px; background: white; border-radius: 8px;">
-                        <div style="font-size: 12px; color: var(--text-secondary);">Вага</div>
-                        <div style="font-size: 24px; font-weight: 700;">${foodData.weight}г</div>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 11px; color: var(--text-secondary);">Білки</div>
-                        <div style="font-size: 16px; font-weight: 600;">${Math.round(foodData.protein)}г</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 11px; color: var(--text-secondary);">Вуглеводи</div>
-                        <div style="font-size: 16px; font-weight: 600;">${Math.round(foodData.carbs)}г</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 11px; color: var(--text-secondary);">Жири</div>
-                        <div style="font-size: 16px; font-weight: 600;">${Math.round(foodData.fats)}г</div>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <select id="mealTypeSelect" style="flex: 1; padding: 12px; border: 2px solid var(--border); border-radius: 8px;">
-                        <option value="breakfast">Сніданок</option>
-                        <option value="lunch">Обід</option>
-                        <option value="dinner">Вечеря</option>
-                        <option value="snacks">Перекус</option>
-                    </select>
-                    <button onclick="addAnalyzedFood()" style="padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
-                        Додати
-                    </button>
-                </div>
-            `;
-            
-            result.classList.remove('hidden');
-            result.dataset.foodData = JSON.stringify(foodData);
-            
-        } catch (error) {
-            result.innerHTML = `
-                <div style="color: var(--danger); text-align: center; padding: 20px;">
-                    ❌ Помилка аналізу: ${error.message}
-                </div>
-            `;
-            result.classList.remove('hidden');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Проаналізувати';
-        }
-    });
-    
-    document.getElementById('addFoodBtn').addEventListener('click', () => {
-        const name = document.getElementById('foodName').value;
-        const calories = parseFloat(document.getElementById('foodCalories').value) || 0;
-        const protein = parseFloat(document.getElementById('foodProtein').value) || 0;
-        const carbs = parseFloat(document.getElementById('foodCarbs').value) || 0;
-        const fats = parseFloat(document.getElementById('foodFats').value) || 0;
-        const mealType = document.getElementById('mealType').value;
-        
-        if (!name || calories === 0) {
-            alert('❌ Заповніть назву та калорії!');
-            return;
-        }
-        
-        addFoodItem(mealType, {
-            name,
-            calories,
-            protein,
-            carbs,
-            fats,
-            emoji: getFoodEmoji(name)
-        });
-        
-        document.getElementById('manualModal').classList.remove('active');
-        resetManualModal();
-    });
-    
-    document.getElementById('saveGoalsBtn').addEventListener('click', () => {
-        currentData.goals.calories = parseInt(document.getElementById('goalCaloriesInput').value);
-        currentData.goals.protein = parseInt(document.getElementById('goalProteinInput').value);
-        currentData.goals.carbs = parseInt(document.getElementById('goalCarbsInput').value);
-        currentData.goals.fats = parseInt(document.getElementById('goalFatsInput').value);
-        
-        updateUI();
-        alert('✅ Цілі збережено!');
-    });
-    
-    document.getElementById('generateMenuBtn').addEventListener('click', () => {
-        if (!checkAccess()) return;
-        generateAIMenu();
-    });
-});
 
 async function generateAIMenu() {
     const btn = document.getElementById('generateMenuBtn');
@@ -801,7 +566,7 @@ function addAIMeal(mealType, mealData) {
 
 function handleFile(file) {
     if (!file.type.startsWith('image/')) {
-        alert('❌ Будь ласка, завантажте зображення!');
+        alert('Будь ласка, завантажте зображення');
         return;
     }
     
@@ -821,13 +586,13 @@ function handleFile(file) {
 function resetPhotoModal() {
     document.getElementById('fileInput').value = '';
     document.getElementById('imagePreview').src = '';
-    document.getElementById('optionalFoodName').value = '';
-    document.getElementById('optionalWeight').value = '';
     document.querySelector('.upload-placeholder').style.display = 'block';
     document.getElementById('previewContainer').classList.add('hidden');
-    document.getElementById('optionalInputs').style.display = 'none';
     document.getElementById('analysisResult').classList.add('hidden');
     document.getElementById('analyzeBtn').disabled = true;
+    document.getElementById('optionalInputs').style.display = 'none';
+    document.getElementById('optionalFoodName').value = '';
+    document.getElementById('optionalWeight').value = '';
 }
 
 function resetManualModal() {
@@ -868,72 +633,74 @@ function updateStats() {
     document.getElementById('goalsReached').textContent = goalsReached;
     document.getElementById('totalCalories').textContent = Math.round(totalCalories);
     
-    displayDetailedChart();
+    displayWeekChart();
 }
 
-function displayDetailedChart() {
-    const chartContainer = document.getElementById('weekChart');
-    const history = (currentData.history || []).slice(-7);
+function displayWeekChart() {
+    const chartWrapper = document.getElementById('chartWrapper');
+    const history = currentData.history || [];
     
     if (history.length === 0) {
-        chartContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">Немає даних для відображення</p>';
+        chartWrapper.innerHTML = '<p style="text-align: center;">Недостатньо даних для графіку</p>';
         return;
     }
     
-    let html = '<div class="detailed-chart">';
+    const last7Days = history.slice(-7);
+    const maxCalories = Math.max(...last7Days.map(d => d.calories), currentData.goals.calories);
     
-    history.forEach(day => {
+    let html = '<div style="display: flex; align-items: flex-end; gap: 12px; height: 250px; padding: 20px 0;">';
+    
+    last7Days.forEach((day, index) => {
         const date = new Date(day.date);
-        const dateStr = date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
-        
-        const meals = day.meals || {breakfast:[], lunch:[], dinner:[], snacks:[]};
-        const breakfastCal = meals.breakfast ? meals.breakfast.reduce((sum, m) => sum + m.calories, 0) : 0;
-        const lunchCal = meals.lunch ? meals.lunch.reduce((sum, m) => sum + m.calories, 0) : 0;
-        const dinnerCal = meals.dinner ? meals.dinner.reduce((sum, m) => sum + m.calories, 0) : 0;
-        const snacksCal = meals.snacks ? meals.snacks.reduce((sum, m) => sum + m.calories, 0) : 0;
+        const dayName = date.toLocaleDateString('uk-UA', { weekday: 'short' });
+        const height = (day.calories / maxCalories) * 100;
+        const isGoalReached = Math.abs(day.calories - currentData.goals.calories) <= currentData.goals.calories * 0.1;
         
         html += `
-            <div class="chart-day">
-                <div class="chart-day-header">
-                    <strong>${dateStr}</strong>
-                    <span>${Math.round(day.calories)} ккал</span>
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <div style="width: 100%; height: ${height}%; background: linear-gradient(180deg, var(--primary), var(--secondary)); border-radius: 8px 8px 0 0; min-height: 20px; position: relative; transition: all 0.3s; box-shadow: 0 -4px 12px rgba(139, 92, 246, 0.3);">
+                    <div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 700; color: var(--text-primary); white-space: nowrap;">
+                        ${Math.round(day.calories)}
+                    </div>
+                    ${isGoalReached ? '<div style="position: absolute; top: -45px; left: 50%; transform: translateX(-50%); font-size: 16px;">✅</div>' : ''}
                 </div>
-                <div class="chart-day-meals">
-                    ${breakfastCal > 0 ? `<div class="chart-meal">🌅 ${breakfastCal.toFixed(0)} ккал</div>` : ''}
-                    ${lunchCal > 0 ? `<div class="chart-meal">☀️ ${lunchCal.toFixed(0)} ккал</div>` : ''}
-                    ${dinnerCal > 0 ? `<div class="chart-meal">🌙 ${dinnerCal.toFixed(0)} ккал</div>` : ''}
-                    ${snacksCal > 0 ? `<div class="chart-meal">🍪 ${snacksCal.toFixed(0)} ккал</div>` : ''}
-                </div>
-                <div class="chart-bar-container">
-                    <div class="chart-bar" style="width: ${Math.min((day.calories / currentData.goals.calories) * 100, 100)}%; background: ${day.calories > currentData.goals.calories ? '#ef4444' : '#10b981'}"></div>
-                </div>
+                <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">${dayName}</div>
             </div>
         `;
     });
     
     html += '</div>';
-    chartContainer.innerHTML = html;
-}
-
-function loadHistory() {
-    filterHistory('week');
+    html += `<div style="text-align: center; padding: 10px; border-top: 1px solid var(--border); margin-top: 10px; color: var(--text-secondary); font-size: 13px;">
+        <span style="color: var(--primary-light);">━</span> Ціль: ${currentData.goals.calories} ккал
+    </div>`;
+    
+    chartWrapper.innerHTML = html;
 }
 
 function filterHistory(period) {
+    currentHistoryFilter = period;
+    
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.closest('.filter-btn').classList.add('active');
+    
+    loadHistory();
+}
+
+function loadHistory() {
     const timeline = document.getElementById('historyTimeline');
-    let history = [...(currentData.history || [])];
+    let history = [...(currentData.history || [])].reverse();
     
     const now = new Date();
     
-    if (period === 'week') {
+    if (currentHistoryFilter === 'week') {
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         history = history.filter(day => new Date(day.date) >= weekAgo);
-    } else if (period === 'month') {
+    } else if (currentHistoryFilter === 'month') {
         const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         history = history.filter(day => new Date(day.date) >= monthAgo);
     }
-    
-    history = history.reverse();
     
     if (history.length === 0) {
         timeline.innerHTML = `
@@ -947,70 +714,258 @@ function filterHistory(period) {
     }
     
     timeline.innerHTML = history.map(day => {
-        const meals = day.meals || {breakfast:[], lunch:[], dinner:[], snacks:[]};
-        const mealBreakdown = `
-            <div class="history-meals">
-                ${meals.breakfast && meals.breakfast.length > 0 ? `
-                    <div class="history-meal-section">
-                        <h4>🌅 Сніданок</h4>
-                        ${meals.breakfast.map(m => `
-                            <div class="history-meal-item">${m.emoji || '🍽️'} ${m.name} - ${Math.round(m.calories)} ккал</div>
-                        `).join('')}
-                    </div>
-                ` : ''}
-                ${meals.lunch && meals.lunch.length > 0 ? `
-                    <div class="history-meal-section">
-                        <h4>☀️ Обід</h4>
-                        ${meals.lunch.map(m => `
-                            <div class="history-meal-item">${m.emoji || '🍽️'} ${m.name} - ${Math.round(m.calories)} ккал</div>
-                        `).join('')}
-                    </div>
-                ` : ''}
-                ${meals.dinner && meals.dinner.length > 0 ? `
-                    <div class="history-meal-section">
-                        <h4>🌙 Вечеря</h4>
-                        ${meals.dinner.map(m => `
-                            <div class="history-meal-item">${m.emoji || '🍽️'} ${m.name} - ${Math.round(m.calories)} ккал</div>
-                        `).join('')}
-                    </div>
-                ` : ''}
-                ${meals.snacks && meals.snacks.length > 0 ? `
-                    <div class="history-meal-section">
-                        <h4>🍪 Перекуси</h4>
-                        ${meals.snacks.map(m => `
-                            <div class="history-meal-item">${m.emoji || '🍽️'} ${m.name} - ${Math.round(m.calories)} ккал</div>
-                        `).join('')}
-                    </div>
-                ` : ''}
-            </div>
-        `;
+        const date = new Date(day.date);
+        const isToday = date.toDateString() === new Date().toDateString();
+        const dateStr = isToday ? 'Сьогодні' : date.toLocaleDateString('uk-UA', { 
+            weekday: 'long', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+        
+        const goalReached = Math.abs(day.calories - currentData.goals.calories) <= currentData.goals.calories * 0.1;
+        
+        let mealsHtml = '';
+        if (day.meals) {
+            const allMeals = [
+                ...day.meals.breakfast || [],
+                ...day.meals.lunch || [],
+                ...day.meals.dinner || [],
+                ...day.meals.snacks || []
+            ];
+            
+            if (allMeals.length > 0) {
+                mealsHtml = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">';
+                mealsHtml += '<div style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-secondary);">Страви:</div>';
+                mealsHtml += '<div style="display: flex; flex-wrap: wrap; gap: 8px;">';
+                allMeals.forEach(meal => {
+                    mealsHtml += `<span style="padding: 4px 12px; background: var(--bg-secondary); border-radius: 8px; font-size: 12px; border: 1px solid var(--border);">${meal.emoji || '🍽️'} ${meal.name}</span>`;
+                });
+                mealsHtml += '</div></div>';
+            }
+        }
         
         return `
             <div class="history-item">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                    <div style="font-weight: 700; font-size: 18px;">
-                        ${new Date(day.date).toLocaleDateString('uk-UA', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    <div style="font-weight: 700; font-size: 18px; color: var(--text-primary);">
+                        ${dateStr} ${goalReached ? '✅' : ''}
                     </div>
-                    <div style="font-size: 24px; font-weight: 700; color: var(--primary);">
+                    <div style="font-size: 24px; font-weight: 700; color: var(--primary-light);">
                         ${Math.round(day.calories)} ккал
                     </div>
                 </div>
-                ${mealBreakdown}
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px;">
-                    <div style="text-align: center; padding: 12px; background: var(--bg-secondary); border-radius: 8px;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                    <div style="text-align: center; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border);">
                         <div style="font-size: 12px; color: var(--text-secondary);">Білки</div>
-                        <div style="font-size: 18px; font-weight: 600;">${Math.round(day.protein)}г</div>
+                        <div style="font-size: 18px; font-weight: 600; color: var(--text-primary);">${Math.round(day.protein)}г</div>
                     </div>
-                    <div style="text-align: center; padding: 12px; background: var(--bg-secondary); border-radius: 8px;">
+                    <div style="text-align: center; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border);">
                         <div style="font-size: 12px; color: var(--text-secondary);">Вуглеводи</div>
-                        <div style="font-size: 18px; font-weight: 600;">${Math.round(day.carbs)}г</div>
+                        <div style="font-size: 18px; font-weight: 600; color: var(--text-primary);">${Math.round(day.carbs)}г</div>
                     </div>
-                    <div style="text-align: center; padding: 12px; background: var(--bg-secondary); border-radius: 8px;">
+                    <div style="text-align: center; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border);">
                         <div style="font-size: 12px; color: var(--text-secondary);">Жири</div>
-                        <div style="font-size: 18px; font-weight: 600;">${Math.round(day.fats)}г</div>
+                        <div style="font-size: 18px; font-weight: 600; color: var(--text-primary);">${Math.round(day.fats)}г</div>
                     </div>
                 </div>
+                ${mealsHtml}
             </div>
         `;
     }).join('');
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (checkOnboarding()) {
+        loadData();
+        updateUI();
+    }
+    
+    const svg = document.querySelector('.ring-svg');
+    svg.innerHTML += `
+        <defs>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#6366f1;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+    `;
+    
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const page = btn.dataset.page;
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`${page}-page`).classList.add('active');
+            
+            if (page === 'stats') {
+                updateStats();
+            } else if (page === 'goals') {
+                loadGoalsForm();
+            } else if (page === 'history') {
+                loadHistory();
+            }
+        });
+    });
+    
+    document.getElementById('photoBtn').addEventListener('click', () => {
+        document.getElementById('photoModal').classList.add('active');
+    });
+    
+    document.getElementById('closePhotoModal').addEventListener('click', () => {
+        document.getElementById('photoModal').classList.remove('active');
+        resetPhotoModal();
+    });
+    
+    document.getElementById('manualBtn').addEventListener('click', () => {
+        document.getElementById('manualModal').classList.add('active');
+    });
+    
+    document.getElementById('closeManualModal').addEventListener('click', () => {
+        document.getElementById('manualModal').classList.remove('active');
+        resetManualModal();
+    });
+    
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+    
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0]);
+        }
+    });
+    
+    document.getElementById('analyzeBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('analyzeBtn');
+        const result = document.getElementById('analysisResult');
+        
+        btn.disabled = true;
+        btn.textContent = '⏳ Аналізую...';
+        result.classList.add('hidden');
+        
+        try {
+            const imageBase64 = document.getElementById('imagePreview').src.split(',')[1];
+            const foodData = await analyzePhoto(imageBase64);
+            
+            result.innerHTML = `
+                <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary);">
+                    ${foodData.emoji} ${foodData.name}
+                </h4>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                    ${foodData.description || ''}
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;">
+                    <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 12px; color: var(--text-secondary);">Калорії</div>
+                        <div style="font-size: 24px; font-weight: 700; color: var(--primary-light);">${Math.round(foodData.calories)}</div>
+                    </div>
+                    <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 12px; color: var(--text-secondary);">Вага</div>
+                        <div style="font-size: 24px; font-weight: 700; color: var(--text-primary);">${foodData.weight}г</div>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
+                    <div style="text-align: center; padding: 8px; background: var(--bg-tertiary); border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 11px; color: var(--text-secondary);">Білки</div>
+                        <div style="font-size: 16px; font-weight: 600; color: var(--text-primary);">${Math.round(foodData.protein)}г</div>
+                    </div>
+                    <div style="text-align: center; padding: 8px; background: var(--bg-tertiary); border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 11px; color: var(--text-secondary);">Вуглеводи</div>
+                        <div style="font-size: 16px; font-weight: 600; color: var(--text-primary);">${Math.round(foodData.carbs)}г</div>
+                    </div>
+                    <div style="text-align: center; padding: 8px; background: var(--bg-tertiary); border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 11px; color: var(--text-secondary);">Жири</div>
+                        <div style="font-size: 16px; font-weight: 600; color: var(--text-primary);">${Math.round(foodData.fats)}г</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <select id="mealTypeSelect" style="flex: 1; padding: 12px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                        <option value="breakfast">Сніданок</option>
+                        <option value="lunch">Обід</option>
+                        <option value="dinner">Вечеря</option>
+                        <option value="snacks">Перекус</option>
+                    </select>
+                    <button onclick="addAnalyzedFood()" style="padding: 12px 24px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        Додати
+                    </button>
+                </div>
+            `;
+            
+            result.classList.remove('hidden');
+            result.dataset.foodData = JSON.stringify(foodData);
+            
+        } catch (error) {
+            result.innerHTML = `
+                <div style="color: var(--danger); text-align: center;">
+                    ❌ Помилка аналізу: ${error.message}
+                </div>
+            `;
+            result.classList.remove('hidden');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Проаналізувати';
+        }
+    });
+    
+    document.getElementById('addFoodBtn').addEventListener('click', () => {
+        const name = document.getElementById('foodName').value;
+        const calories = parseFloat(document.getElementById('foodCalories').value) || 0;
+        const protein = parseFloat(document.getElementById('foodProtein').value) || 0;
+        const carbs = parseFloat(document.getElementById('foodCarbs').value) || 0;
+        const fats = parseFloat(document.getElementById('foodFats').value) || 0;
+        const mealType = document.getElementById('mealType').value;
+        
+        if (!name || calories === 0) {
+            alert('Заповніть назву та калорії!');
+            return;
+        }
+        
+        addFoodItem(mealType, {
+            name,
+            calories,
+            protein,
+            carbs,
+            fats,
+            emoji: getFoodEmoji(name)
+        });
+        
+        document.getElementById('manualModal').classList.remove('active');
+        resetManualModal();
+    });
+    
+    document.getElementById('saveGoalsBtn').addEventListener('click', () => {
+        currentData.goals.calories = parseInt(document.getElementById('goalCaloriesInput').value);
+        currentData.goals.protein = parseInt(document.getElementById('goalProteinInput').value);
+        currentData.goals.carbs = parseInt(document.getElementById('goalCarbsInput').value);
+        currentData.goals.fats = parseInt(document.getElementById('goalFatsInput').value);
+        
+        updateUI();
+        alert('✅ Цілі збережено!');
+    });
+    
+    document.getElementById('generateMenuBtn').addEventListener('click', generateAIMenu);
+});
